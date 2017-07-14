@@ -1,0 +1,11 @@
+image: Visual Studio 2017
+install:
+    -   ps: mkdir C:/ASIO-PQ
+    -   ps: ./.appveyor/boost.ps1
+build_script:
+    -   mkdir build
+    -   cd build
+    -   cmake .. -G "Visual Studio 15 2017 Win64" -DBOOST_ROOT=C:/ASIO-PQ/boost_1_64_0 -DBOOST_INCLUDEDIR=C:/ASIO-PQ/boost_1_64_0 -DBOOST_LIBRARYDIR=C:/ASIO-PQ/boost_1_64_0/stage/lib
+    -   cmake --build . --config Release
+test_script:
+    -   ctest -VV -C Release
