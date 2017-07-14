@@ -1,6 +1,12 @@
-add_library(asio_pq INTERFACE)
+add_library(asio_pq
+	handle.cpp
+)
 target_include_directories(asio_pq
-	INTERFACE
+	PUBLIC
 		${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+target_link_libraries(asio_pq
+	PUBLIC
+		PostgreSQL
 )
 add_subdirectory(tests)
