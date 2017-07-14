@@ -9,6 +9,10 @@ target_include_directories(asio_pq
 )
 target_link_libraries(asio_pq
 	PUBLIC
+		Asio
+		Beast
+		Boost::boost
+		Boost::system
 		PostgreSQL
 )
 add_subdirectory(tests)

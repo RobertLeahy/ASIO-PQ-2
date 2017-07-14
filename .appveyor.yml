@@ -5,7 +5,11 @@ install:
 build_script:
     -   mkdir build
     -   cd build
-    -   cmake .. -G "Visual Studio 15 2017 Win64" -DBOOST_ROOT=C:/ASIO-PQ/boost_1_64_0 -DBOOST_INCLUDEDIR=C:/ASIO-PQ/boost_1_64_0 -DBOOST_LIBRARYDIR=C:/ASIO-PQ/boost_1_64_0/stage/lib
+    -   cmake .. -G "Visual Studio 15 2017 Win64" -DBOOST_ROOT=C:/ASIO-PQ/boost_1_64_0 -DBOOST_INCLUDEDIR=C:/ASIO-PQ/boost_1_64_0 -DBOOST_LIBRARYDIR=C:/ASIO-PQ/boost_1_64_0/stage/lib -DBoost_USE_STATIC_LIBS=On -DASIO_PQ_TEST_PASSWORD=Password12!
     -   cmake --build . --config Release
 test_script:
+    -   net start postgresql-x64-9.6
+    -   set PATH=%PATH%;C:\Program Files\PostgreSQL\9.6\bin
+    -   set PGPASSWORD=Password12!
+    -   psql -c "CREATE DATABASE asio_pq;" -h 127.0.0.1 -U postgres -w
     -   ctest -VV -C Release

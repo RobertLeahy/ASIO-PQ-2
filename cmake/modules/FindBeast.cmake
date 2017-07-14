@@ -3,7 +3,7 @@ find_package(Git REQUIRED)
 ExternalProject_Add(
 	beast
 	PREFIX ${CMAKE_BINARY_DIR}/beast
-	GIT_REPOSITORY https://github.com/vinniefalco/Beast.git
+	GIT_REPOSITORY https://github.com/RobertLeahy/Beast.git
 	TIMEOUT 10
 	UPDATE_COMMAND ${GIT_EXECUTABLE} pull
 	CONFIGURE_COMMAND ""
