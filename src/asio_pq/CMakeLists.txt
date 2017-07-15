@@ -1,7 +1,7 @@
 add_library(asio_pq
+	connection.cpp
 	detail/socket.cpp
 	error.cpp
-	handle.cpp
 	result.cpp
 )
 target_include_directories(asio_pq

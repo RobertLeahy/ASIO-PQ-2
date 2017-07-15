@@ -12,32 +12,32 @@ namespace asio_pq {
  *	An RAII wrapper for a pointer to a
  *	`PGconn`.
  */
-class handle {
+class connection {
 private:
 	PGconn * conn_;
 	void destroy () noexcept;
 public:
 	/**
-	 *	Creates a new handle which does no manage
+	 *	Creates a new connection which does no manage
 	 *	a pointer.
 	 */
-	handle () noexcept;
-	handle (const handle &) = delete;
-	handle (handle &&) noexcept;
-	handle & operator = (const handle &) = delete;
-	handle & operator = (handle &&) noexcept;
+	connection () noexcept;
+	connection (const connection &) = delete;
+	connection (connection &&) noexcept;
+	connection & operator = (const connection &) = delete;
+	connection & operator = (connection &&) noexcept;
 	/**
-	 *	Creates a new handle which manages a
+	 *	Creates a new connection which manages a
 	 *	particular pointer.
 	 *
 	 *	\param [in] conn
 	 *		The connection handle to manage.
 	 */
-	explicit handle (PGconn * conn) noexcept;
+	explicit connection (PGconn * conn) noexcept;
 	/**
 	 *	Destroys the managed handle (if any).
 	 */
-	~handle () noexcept;
+	~connection () noexcept;
 	/**
 	 *	Retrieves the managed handle and surrenders
 	 *	ownership thereof (i.e. if the destructor of

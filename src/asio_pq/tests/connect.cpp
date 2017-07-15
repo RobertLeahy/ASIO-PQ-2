@@ -1,6 +1,6 @@
 #include <asio_pq/connect.hpp>
 
-#include <asio_pq/handle.hpp>
+#include <asio_pq/connection.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/system/error_code.hpp>
 #include <libpq-fe.h>
@@ -28,7 +28,7 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 		WHEN("A call to async_connect is made with a valid connection info string") {
 			boost::system::error_code ec;
 			bool invoked = false;
-			asio_pq::handle handle;
+			asio_pq::connection handle;
 			asio_pq::async_connect(
 				ios,
 				"host=" ASIO_PQ_TEST_HOST
@@ -36,7 +36,7 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 				" user=" ASIO_PQ_TEST_USER
 				" password=" ASIO_PQ_TEST_PASSWORD
 				" dbname=" ASIO_PQ_TEST_DBNAME,
-				[&] (boost::system::error_code inner, asio_pq::handle h) noexcept {
+				[&] (boost::system::error_code inner, asio_pq::connection h) noexcept {
 					invoked = true;
 					ec = inner;
 					handle = std::move(h);
@@ -61,7 +61,7 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 		WHEN("A call to async_connect is made with valid parameters") {
 			boost::system::error_code ec;
 			bool invoked = false;
-			asio_pq::handle handle;
+			asio_pq::connection handle;
 			const char * values [] = {
 				ASIO_PQ_TEST_HOST,
 				ASIO_PQ_TEST_PORT,
@@ -75,7 +75,7 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 				keywords,
 				values,
 				false,
-				[&] (boost::system::error_code inner, asio_pq::handle h) noexcept {
+				[&] (boost::system::error_code inner, asio_pq::connection h) noexcept {
 					invoked = true;
 					ec = inner;
 					handle = std::move(h);
@@ -100,11 +100,11 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 		WHEN("A call to async_connect is made with an invalid connection info string") {
 			boost::system::error_code ec;
 			bool invoked = false;
-			asio_pq::handle handle;
+			asio_pq::connection handle;
 			asio_pq::async_connect(
 				ios,
 				"username=asiopq",
-				[&] (boost::system::error_code inner, asio_pq::handle h) noexcept {
+				[&] (boost::system::error_code inner, asio_pq::connection h) noexcept {
 					invoked = true;
 					ec = inner;
 					handle = std::move(h);
@@ -129,7 +129,7 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 		WHEN("A call to async_connect is made with invalid parameters") {
 			boost::system::error_code ec;
 			bool invoked = false;
-			asio_pq::handle handle;
+			asio_pq::connection handle;
 			const char * keywords [] = {"username", nullptr};
 			const char * values [] = {"foo", nullptr};
 			asio_pq::async_connect(
@@ -137,7 +137,7 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 				keywords,
 				values,
 				false,
-				[&] (boost::system::error_code inner, asio_pq::handle h) noexcept {
+				[&] (boost::system::error_code inner, asio_pq::connection h) noexcept {
 					invoked = true;
 					ec = inner;
 					handle = std::move(h);
@@ -162,7 +162,7 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 		WHEN("A call to async_connect is made with a valid connection string containing invalid information") {
 			boost::system::error_code ec;
 			bool invoked = false;
-			asio_pq::handle handle;
+			asio_pq::connection handle;
 			asio_pq::async_connect(
 				ios,
 				"host=" ASIO_PQ_TEST_BAD_HOST
@@ -170,7 +170,7 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 				" user=" ASIO_PQ_TEST_BAD_USER
 				" password=" ASIO_PQ_TEST_BAD_PASSWORD
 				" dbname=" ASIO_PQ_TEST_BAD_DBNAME,
-				[&] (boost::system::error_code inner, asio_pq::handle h) noexcept {
+				[&] (boost::system::error_code inner, asio_pq::connection h) noexcept {
 					invoked = true;
 					ec = inner;
 					handle = std::move(h);
@@ -195,7 +195,7 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 		WHEN("A call to async_connect is made with invalid parameters") {
 			boost::system::error_code ec;
 			bool invoked = false;
-			asio_pq::handle handle;
+			asio_pq::connection handle;
 			const char * values [] = {
 				ASIO_PQ_TEST_BAD_HOST,
 				ASIO_PQ_TEST_BAD_PORT,
@@ -209,7 +209,7 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 				keywords,
 				values,
 				false,
-				[&] (boost::system::error_code inner, asio_pq::handle h) noexcept {
+				[&] (boost::system::error_code inner, asio_pq::connection h) noexcept {
 					invoked = true;
 					ec = inner;
 					handle = std::move(h);

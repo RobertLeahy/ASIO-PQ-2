@@ -4,11 +4,11 @@
 
 #pragma once
 
+#include "connection.hpp"
 #include "detail/op.hpp"
 #include "detail/socket.hpp"
 #include "detail/wrapper.hpp"
 #include "error.hpp"
-#include "handle.hpp"
 #include <beast/core/async_result.hpp>
 #include <beast/core/handler_ptr.hpp>
 #include <boost/asio/io_service.hpp>
@@ -28,7 +28,7 @@ namespace asio_pq {
 
 namespace detail {
 
-using async_connect_signature = void (boost::system::error_code, handle);
+using async_connect_signature = void (boost::system::error_code, connection);
 
 template <typename Handler>
 class async_connect_op_read_wrapper : public wrapper<Handler> {
@@ -63,7 +63,7 @@ public:
 			ec_(ec)
 	{	}
 	void operator () () {
-		base::handler()(ec_, handle{});
+		base::handler()(ec_, connection{});
 	}
 };
 
@@ -85,12 +85,12 @@ private:
 		state (state &&) = default;
 		state & operator = (const state &) = default;
 		state & operator = (state &&) = default;
-		asio_pq::handle handle;
+		asio_pq::connection handle;
 		Socket socket;
 		boost::optional<boost::system::error_code> result;
 		bool read;
 		bool write;
-		state (const Handler &, asio_pq::handle handle, Socket socket)
+		state (const Handler &, asio_pq::connection handle, Socket socket)
 			:	handle(std::move(handle)),
 				socket(std::move(socket)),
 				read(false),
@@ -112,7 +112,7 @@ private:
 		assert(!ptr_->read);
 		assert(!ptr_->write);
 		boost::system::error_code ec = *ptr_->result;
-		asio_pq::handle h(std::move(ptr_->handle));
+		asio_pq::connection h(std::move(ptr_->handle));
 		ptr_.invoke(ec, std::move(h));
 	}
 	void complete_if () {
@@ -179,7 +179,7 @@ public:
 	async_connect_op (async_connect_op &&) = default;
 	async_connect_op & operator = (const async_connect_op &) = default;
 	async_connect_op & operator = (async_connect_op &&) = default;
-	async_connect_op (Handler h, asio_pq::handle handle, Socket socket)
+	async_connect_op (Handler h, asio_pq::connection handle, Socket socket)
 		:	ptr_(std::move(h), std::move(handle), std::move(socket))
 	{	}
 	void read (boost::system::error_code ec) {
@@ -247,7 +247,7 @@ void async_connect_fail (
 template <typename CompletionToken>
 auto async_connect (
 	boost::asio::io_service & ios,
-	handle h,
+	connection h,
 	CompletionToken && token
 ) {
 	beast::async_completion<CompletionToken, async_connect_signature> init(token);
@@ -289,7 +289,7 @@ auto async_connect (
  *		The completion token which shall be used to notify
  *		the caller of completion. Two parameters are provided:
  *		An instance of `boost::system::error_code` representing
- *		the result of the operation and a \ref handle containing
+ *		the result of the operation and a \ref connection containing
  *		the `PGconn *` representing the connection (if applicable).
  *
  *	\return
@@ -301,7 +301,7 @@ auto async_connect (
 	const char * conninfo,
 	CompletionToken && token
 ) {
-	handle h(PQconnectStart(conninfo));
+	connection h(PQconnectStart(conninfo));
 	return detail::async_connect(
 		ios,
 		std::move(h),
@@ -329,7 +329,7 @@ auto async_connect (
  *		The completion token which shall be used to notify
  *		the caller of completion. Two parameters are provided:
  *		An instance of `boost::system::error_code` representing
- *		the result of the operation and a \ref handle containing
+ *		the result of the operation and a \ref connection containing
  *		the `PGconn *` representing the connection (if applicable).
  *
  *	\return
@@ -344,7 +344,7 @@ auto async_connect (
 	CompletionToken && token
 ) {
 	int edbn(expand_dbname);
-	handle h(PQconnectStartParams(keywords, values, expand_dbname));
+	connection h(PQconnectStartParams(keywords, values, expand_dbname));
 	return detail::async_connect(
 		ios,
 		std::move(h),
