@@ -1,4 +1,6 @@
 add_library(asio_pq
+	detail/socket.cpp
+	error.cpp
 	handle.cpp
 )
 target_include_directories(asio_pq
