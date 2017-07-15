@@ -20,6 +20,10 @@ boost::system::error_code make_error_code (error e) noexcept {
 				return "Connection bad";
 			case error::polling_failed:
 				return "Polling failed";
+			case error::flush_failed:
+				return "Failed writing data";
+			case error::consume_failed:
+				return "Failed reading data";
 			default:
 				break;
 			}

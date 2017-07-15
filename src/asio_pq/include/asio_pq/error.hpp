@@ -16,7 +16,9 @@ namespace asio_pq {
 enum class error {
 	success = 0,
 	connection_bad,
-	polling_failed
+	polling_failed,
+	flush_failed,
+	consume_failed
 };
 
 boost::system::error_code make_error_code (error e) noexcept;
