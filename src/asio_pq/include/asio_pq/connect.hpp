@@ -30,28 +30,6 @@ namespace detail {
 using async_connect_signature = void (boost::system::error_code, connection);
 
 template <typename Handler>
-class async_connect_op_read_wrapper : public wrapper<Handler> {
-private:
-	using base = wrapper<Handler>;
-public:
-	using base::base;
-	void operator () (boost::system::error_code ec) {
-		base::handler().read(ec);
-	}
-};
-
-template <typename Handler>
-class async_connect_op_write_wrapper : public wrapper<Handler> {
-private:
-	using base = wrapper<Handler>;
-public:
-	using base::base;
-	void operator () (boost::system::error_code ec) {
-		base::handler().write(ec);
-	}
-};
-
-template <typename Handler>
 class async_connect_fail_wrapper : public wrapper<Handler> {
 private:
 	using base = wrapper<Handler>;
@@ -133,7 +111,7 @@ private:
 			this->ptr_->read = true;
 			detail::async_readable(
 				socket,
-				async_connect_op_read_wrapper<async_connect_op>(std::move(*this))
+				detail::make_read_wrapper(std::move(*this))
 			);
 		});
 	}
@@ -142,7 +120,7 @@ private:
 			this->ptr_->write = true;
 			detail::async_writable(
 				socket,
-				async_connect_op_write_wrapper<async_connect_op>(std::move(*this))
+				detail::make_write_wrapper(std::move(*this))
 			);
 		});
 	}

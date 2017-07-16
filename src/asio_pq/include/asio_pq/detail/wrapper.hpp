@@ -7,6 +7,7 @@
 #include <boost/asio/handler_alloc_hook.hpp>
 #include <boost/asio/handler_continuation_hook.hpp>
 #include <boost/asio/handler_invoke_hook.hpp>
+#include <boost/system/error_code.hpp>
 #include <cassert>
 #include <memory>
 #include <type_traits>
@@ -51,6 +52,38 @@ public:
 		asio_handler_deallocate(ptr, num, std::addressof(self->h_));
 	}
 };
+
+template <typename Handler>
+class read_wrapper : public wrapper<Handler> {
+private:
+	using base = wrapper<Handler>;
+public:
+	using base::base;
+	void operator () (boost::system::error_code ec) {
+		base::handler().read(ec);
+	}
+};
+
+template <typename Handler>
+read_wrapper<Handler> make_read_wrapper (Handler h) noexcept(std::is_nothrow_move_constructible<Handler>::value) {
+	return read_wrapper<Handler>(std::move(h));
+}
+
+template <typename Handler>
+class write_wrapper : public wrapper<Handler> {
+private:
+	using base = wrapper<Handler>;
+public:
+	using base::base;
+	void operator () (boost::system::error_code ec) {
+		base::handler().write(ec);
+	}
+};
+
+template <typename Handler>
+write_wrapper<Handler> make_write_wrapper (Handler h) noexcept(std::is_nothrow_move_constructible<Handler>::value) {
+	return write_wrapper<Handler>(std::move(h));
+}
 
 }
 }
