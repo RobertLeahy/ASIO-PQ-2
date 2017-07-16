@@ -1,6 +1,7 @@
 #include <asio_pq/detail/socket.hpp>
 
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/local/stream_protocol.hpp>
 #include <boost/system/error_code.hpp>
 #include <libpq-fe.h>
 #include <cstring>
@@ -150,6 +151,34 @@ boost::asio::local::stream_protocol::socket local_socket (
 	return retr;
 }
 #endif
+
+socket_variant_type socket (boost::asio::io_service & ios, PGconn * conn, boost::system::error_code & ec) {
+	ec.clear();
+	if (!conn) {
+		ec = make_error_code(boost::system::errc::invalid_argument);
+		return boost::asio::ip::tcp::socket(ios);
+	}
+	socket_type type = get_socket_type(conn, ec);
+	if (ec) {
+		return boost::asio::ip::tcp::socket(ios);
+	}
+	bool v4 = false;
+	switch (type) {
+	case socket_type::tcp_ip_v4:
+		v4 = true;
+	case socket_type::tcp_ip_v6:{
+		return detail::tcp_socket(ios, conn, v4, ec);
+	}
+	case socket_type::unix_domain:
+		#ifdef ASIO_PQ_HAS_LOCAL_SOCKETS
+		return detail::local_socket(ios, conn, ec);
+		#else
+		ec = make_error_code(boost::system::errc::not_supported);
+		#endif
+		break;
+	}
+	return boost::asio::ip::tcp::socket(ios);
+}
 
 }
 }

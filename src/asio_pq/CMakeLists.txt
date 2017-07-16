@@ -14,6 +14,7 @@ target_link_libraries(asio_pq
 		Beast
 		Boost::boost
 		Boost::system
+		MParkVariant
 		PostgreSQL
 )
 add_subdirectory(tests)

@@ -4,7 +4,13 @@
 
 #pragma once
 
+#include "detail/socket.hpp"
+#include <boost/asio/io_service.hpp>
+#include <boost/optional.hpp>
+#include <boost/system/error_code.hpp>
 #include <libpq-fe.h>
+#include <mpark/variant.hpp>
+#include <cassert>
 
 namespace asio_pq {
 
@@ -15,6 +21,7 @@ namespace asio_pq {
 class connection {
 private:
 	PGconn * conn_;
+	boost::optional<detail::socket_variant_type> socket_;
 	void destroy () noexcept;
 public:
 	/**
@@ -71,6 +78,14 @@ public:
 	 *		handle, \em false otherwise.
 	 */
 	explicit operator bool () const noexcept;
+	boost::system::error_code duplicate_socket (boost::asio::io_service &);
+	template <typename Handler>
+	void socket (Handler h) {
+		assert(socket_);
+		mpark::visit(h, *socket_);
+	}
+	bool has_socket () const noexcept;
+	boost::asio::io_service & get_io_service () noexcept;
 };
 
 }

@@ -9,6 +9,7 @@
 #include <boost/asio/local/stream_protocol.hpp>
 #include <boost/system/error_code.hpp>
 #include <libpq-fe.h>
+#include <mpark/variant.hpp>
 #include <utility>
 
 #if !defined(_WIN32) && defined(BOOST_ASIO_HAS_LOCAL_SOCKETS)
@@ -17,6 +18,13 @@
 
 namespace asio_pq {
 namespace detail {
+
+using socket_variant_type = mpark::variant<
+	boost::asio::ip::tcp::socket
+	#ifdef ASIO_PQ_HAS_LOCAL_SOCKETS
+	, boost::asio::local::stream_protocol::socket
+	#endif
+>;
 
 enum class socket_type {
 	tcp_ip_v4,
@@ -41,39 +49,7 @@ boost::asio::local::stream_protocol::socket local_socket (
 ) noexcept;
 #endif
 
-template <typename Handler>
-void socket (boost::asio::io_service & ios, PGconn * conn, Handler h) {
-	boost::system::error_code ec;
-	if (PQstatus(conn) == CONNECTION_BAD) {
-		h(ec, boost::asio::ip::tcp::socket(ios));
-		return;
-	}
-	socket_type type = get_socket_type(conn, ec);
-	if (!ec) {
-		bool v4 = false;
-		switch (type) {
-		case socket_type::tcp_ip_v4:
-			v4 = true;
-		case socket_type::tcp_ip_v6:{
-			auto tcp = detail::tcp_socket(ios, conn, v4, ec);
-			h(ec, std::move(tcp));
-			return;
-		}
-		case socket_type::unix_domain:
-			#ifdef ASIO_PQ_HAS_LOCAL_SOCKETS
-			{
-				auto local = detail::local_socket(ios, conn, ec);
-				h(ec, std::move(local));
-				return;
-			}
-			#else
-			ec = make_error_code(boost::system::errc::not_supported);
-			#endif
-			break;
-		}
-	}
-	h(ec, boost::asio::ip::tcp::socket(ios));
-}
+socket_variant_type socket (boost::asio::io_service & ios, PGconn * conn, boost::system::error_code & ec);
 
 }
 }

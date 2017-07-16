@@ -6,7 +6,6 @@
 
 #include "connection.hpp"
 #include "detail/op.hpp"
-#include "detail/socket.hpp"
 #include "detail/wrapper.hpp"
 #include "error.hpp"
 #include <beast/core/async_result.hpp>
@@ -67,7 +66,7 @@ public:
 	}
 };
 
-template <typename Socket, typename Handler>
+template <typename Handler>
 class async_connect_op {
 //	TODO (?): If simultaneous reads and writes
 //	during connect ever become a thing:
@@ -86,13 +85,13 @@ private:
 		state & operator = (const state &) = default;
 		state & operator = (state &&) = default;
 		asio_pq::connection handle;
-		Socket socket;
+		boost::asio::io_service & io_service;
 		boost::optional<boost::system::error_code> result;
 		bool read;
 		bool write;
-		state (const Handler &, asio_pq::connection handle, Socket socket)
+		state (const Handler &, asio_pq::connection handle, boost::asio::io_service & ios)
 			:	handle(std::move(handle)),
-				socket(std::move(socket)),
+				io_service(ios),
 				read(false),
 				write(false)
 		{	}
@@ -104,7 +103,7 @@ private:
 		assert(!ptr_->read);
 		assert(!ptr_->write);
 		ptr_->result = ec;
-		boost::asio::io_service & ios = ptr_->socket.get_io_service();
+		boost::asio::io_service & ios = ptr_->io_service;
 		ios.post(std::move(*this));
 	}
 	void complete () {
@@ -130,20 +129,22 @@ private:
 		return false;
 	}
 	void read () {
-		Socket & socket = ptr_->socket;
-		ptr_->read = true;
-		detail::async_readable(
-			socket,
-			async_connect_op_read_wrapper<async_connect_op>(std::move(*this))
-		);
+		ptr_->handle.socket([&] (auto & socket) {
+			this->ptr_->read = true;
+			detail::async_readable(
+				socket,
+				async_connect_op_read_wrapper<async_connect_op>(std::move(*this))
+			);
+		});
 	}
 	void write () {
-		Socket & socket = ptr_->socket;
-		ptr_->write = true;
-		detail::async_writable(
-			socket,
-			async_connect_op_write_wrapper<async_connect_op>(std::move(*this))
-		);
+		ptr_->handle.socket([&] (auto & socket) {
+			this->ptr_->write = true;
+			detail::async_writable(
+				socket,
+				async_connect_op_write_wrapper<async_connect_op>(std::move(*this))
+			);
+		});
 	}
 	void succeed () {
 		assert(!ptr_->result);
@@ -179,8 +180,8 @@ public:
 	async_connect_op (async_connect_op &&) = default;
 	async_connect_op & operator = (const async_connect_op &) = default;
 	async_connect_op & operator = (async_connect_op &&) = default;
-	async_connect_op (Handler h, asio_pq::connection handle, Socket socket)
-		:	ptr_(std::move(h), std::move(handle), std::move(socket))
+	async_connect_op (Handler h, asio_pq::connection handle, boost::asio::io_service & ios)
+		:	ptr_(std::move(h), std::move(handle), ios)
 	{	}
 	void read (boost::system::error_code ec) {
 		ptr_->read = false;
@@ -190,13 +191,16 @@ public:
 		ptr_->write = false;
 		impl(ec);
 	}
-	void begin (boost::system::error_code ec) {
+	void begin () {
 		if (PQstatus(ptr_->handle) == CONNECTION_BAD) {
 			begin_fail(make_error_code(error::connection_bad));
 			return;
 		}
+		boost::asio::io_service & ios = ptr_->io_service;
+		auto ec = ptr_->handle.duplicate_socket(ios);
 		if (ec) {
-			begin_fail(ec);
+			ptr_->result = ec;
+			ios.post(std::move(*this));
 			return;
 		}
 		//	If you have yet to call PQconnectPoll, i.e.,
@@ -251,22 +255,22 @@ auto async_connect (
 	CompletionToken && token
 ) {
 	beast::async_completion<CompletionToken, async_connect_signature> init(token);
-	if (h) detail::socket(ios, h, [&] (auto ec, auto socket) {
+	if (h) {
 		async_connect_op<
-			decltype(socket),
 			beast::handler_type<CompletionToken, async_connect_signature>
 		> op(
 			std::move(init.completion_handler),
 			std::move(h),
-			std::move(socket)
+			ios
 		);
-		op.begin(ec);
-	});
-	else detail::async_connect_fail(
-		ios,
-		make_error_code(boost::system::errc::not_enough_memory),
-		std::move(init.completion_handler)
-	);
+		op.begin();
+	} else {
+		detail::async_connect_fail(
+			ios,
+			make_error_code(boost::system::errc::not_enough_memory),
+			std::move(init.completion_handler)
+		);
+	}
 	return init.result.get();
 }
 

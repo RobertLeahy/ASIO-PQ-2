@@ -51,6 +51,7 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 					REQUIRE(invoked);
 					AND_THEN("The operation does not fail") {
 						REQUIRE(handle);
+						CHECK(handle.has_socket());
 						INFO("boost::system::error_code::message: " << ec.message());
 						INFO("PQerrorMessage: " << PQerrorMessage(handle));
 						CHECK_FALSE(ec);
@@ -90,6 +91,7 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 					REQUIRE(invoked);
 					AND_THEN("The operation does not fail") {
 						REQUIRE(handle);
+						CHECK(handle.has_socket());
 						INFO("boost::system::error_code::message: " << ec.message());
 						INFO("PQerrorMessage: " << PQerrorMessage(handle));
 						CHECK_FALSE(ec);
@@ -185,6 +187,7 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 					REQUIRE(invoked);
 					AND_THEN("The operation fails") {
 						REQUIRE(handle);
+						CHECK(handle.has_socket());
 						INFO("boost::system::error_code::message: " << ec.message());
 						INFO("PQerrorMessage: " << PQerrorMessage(handle));
 						CHECK(ec);
@@ -224,6 +227,7 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 					REQUIRE(invoked);
 					AND_THEN("The operation fails") {
 						REQUIRE(handle);
+						CHECK(handle.has_socket());
 						INFO("boost::system::error_code::message: " << ec.message());
 						INFO("PQerrorMessage: " << PQerrorMessage(handle));
 						CHECK(ec);
