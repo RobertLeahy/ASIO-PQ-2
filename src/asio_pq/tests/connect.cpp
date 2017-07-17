@@ -28,18 +28,20 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 		WHEN("A call to async_connect is made with a valid connection info string") {
 			boost::system::error_code ec;
 			bool invoked = false;
-			asio_pq::connection handle;
-			asio_pq::async_connect(
-				ios,
+			connection handle(
 				"host=" ASIO_PQ_TEST_HOST
 				" port=" ASIO_PQ_TEST_PORT
 				" user=" ASIO_PQ_TEST_USER
 				" password=" ASIO_PQ_TEST_PASSWORD
-				" dbname=" ASIO_PQ_TEST_DBNAME,
-				[&] (boost::system::error_code inner, asio_pq::connection h) noexcept {
+				" dbname=" ASIO_PQ_TEST_DBNAME
+			);
+			REQUIRE(handle);
+			async_connect(
+				ios,
+				handle,
+				[&] (boost::system::error_code inner) noexcept {
 					invoked = true;
 					ec = inner;
-					handle = std::move(h);
 				}
 			);
 			THEN("The operation does not complete") {
@@ -50,7 +52,6 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 				THEN("The operation completes") {
 					REQUIRE(invoked);
 					AND_THEN("The operation does not fail") {
-						REQUIRE(handle);
 						CHECK(handle.has_socket());
 						INFO("boost::system::error_code::message: " << ec.message());
 						INFO("PQerrorMessage: " << PQerrorMessage(handle));
@@ -62,7 +63,6 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 		WHEN("A call to async_connect is made with valid parameters") {
 			boost::system::error_code ec;
 			bool invoked = false;
-			asio_pq::connection handle;
 			const char * values [] = {
 				ASIO_PQ_TEST_HOST,
 				ASIO_PQ_TEST_PORT,
@@ -71,15 +71,14 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 				ASIO_PQ_TEST_DBNAME,
 				nullptr
 			};
-			asio_pq::async_connect(
+			connection handle(keywords, values, false);
+			REQUIRE(handle);
+			async_connect(
 				ios,
-				keywords,
-				values,
-				false,
-				[&] (boost::system::error_code inner, asio_pq::connection h) noexcept {
+				handle,
+				[&] (boost::system::error_code inner) noexcept {
 					invoked = true;
 					ec = inner;
-					handle = std::move(h);
 				}
 			);
 			THEN("The operation does not complete") {
@@ -90,7 +89,6 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 				THEN("The operation completes") {
 					REQUIRE(invoked);
 					AND_THEN("The operation does not fail") {
-						REQUIRE(handle);
 						CHECK(handle.has_socket());
 						INFO("boost::system::error_code::message: " << ec.message());
 						INFO("PQerrorMessage: " << PQerrorMessage(handle));
@@ -102,14 +100,14 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 		WHEN("A call to async_connect is made with an invalid connection info string") {
 			boost::system::error_code ec;
 			bool invoked = false;
-			asio_pq::connection handle;
-			asio_pq::async_connect(
+			connection handle("username=asiopq");
+			REQUIRE(handle);
+			async_connect(
 				ios,
-				"username=asiopq",
-				[&] (boost::system::error_code inner, asio_pq::connection h) noexcept {
+				handle,
+				[&] (boost::system::error_code inner) noexcept {
 					invoked = true;
 					ec = inner;
-					handle = std::move(h);
 				}
 			);
 			THEN("The operation does not complete") {
@@ -120,7 +118,6 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 				THEN("The operation completes") {
 					REQUIRE(invoked);
 					AND_THEN("The operation fails") {
-						REQUIRE(handle);
 						INFO("boost::system::error_code::message: " << ec.message());
 						INFO("PQerrorMessage: " << PQerrorMessage(handle));
 						CHECK(ec);
@@ -131,18 +128,16 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 		WHEN("A call to async_connect is made with invalid parameters") {
 			boost::system::error_code ec;
 			bool invoked = false;
-			asio_pq::connection handle;
 			const char * keywords [] = {"username", nullptr};
 			const char * values [] = {"foo", nullptr};
-			asio_pq::async_connect(
+			connection handle(keywords, values, false);
+			REQUIRE(handle);
+			async_connect(
 				ios,
-				keywords,
-				values,
-				false,
-				[&] (boost::system::error_code inner, asio_pq::connection h) noexcept {
+				handle,
+				[&] (boost::system::error_code inner) noexcept {
 					invoked = true;
 					ec = inner;
-					handle = std::move(h);
 				}
 			);
 			THEN("The operation does not complete") {
@@ -153,7 +148,6 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 				THEN("The operation completes") {
 					REQUIRE(invoked);
 					AND_THEN("The operation fails") {
-						REQUIRE(handle);
 						INFO("boost::system::error_code::message: " << ec.message());
 						INFO("PQerrorMessage: " << PQerrorMessage(handle));
 						CHECK(ec);
@@ -164,18 +158,20 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 		WHEN("A call to async_connect is made with a valid connection string containing invalid information") {
 			boost::system::error_code ec;
 			bool invoked = false;
-			asio_pq::connection handle;
-			asio_pq::async_connect(
-				ios,
+			connection handle(
 				"host=" ASIO_PQ_TEST_BAD_HOST
 				" port=" ASIO_PQ_TEST_BAD_PORT
 				" user=" ASIO_PQ_TEST_BAD_USER
 				" password=" ASIO_PQ_TEST_BAD_PASSWORD
-				" dbname=" ASIO_PQ_TEST_BAD_DBNAME,
-				[&] (boost::system::error_code inner, asio_pq::connection h) noexcept {
+				" dbname=" ASIO_PQ_TEST_BAD_DBNAME
+			);
+			REQUIRE(handle);
+			async_connect(
+				ios,
+				handle,
+				[&] (boost::system::error_code inner) noexcept {
 					invoked = true;
 					ec = inner;
-					handle = std::move(h);
 				}
 			);
 			THEN("The operation does not complete") {
@@ -186,7 +182,6 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 				THEN("The operation completes") {
 					REQUIRE(invoked);
 					AND_THEN("The operation fails") {
-						REQUIRE(handle);
 						CHECK(handle.has_socket());
 						INFO("boost::system::error_code::message: " << ec.message());
 						INFO("PQerrorMessage: " << PQerrorMessage(handle));
@@ -198,7 +193,6 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 		WHEN("A call to async_connect is made with invalid parameters") {
 			boost::system::error_code ec;
 			bool invoked = false;
-			asio_pq::connection handle;
 			const char * values [] = {
 				ASIO_PQ_TEST_BAD_HOST,
 				ASIO_PQ_TEST_BAD_PORT,
@@ -207,15 +201,14 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 				ASIO_PQ_TEST_BAD_DBNAME,
 				nullptr
 			};
-			asio_pq::async_connect(
+			connection handle(keywords, values, false);
+			REQUIRE(handle);
+			async_connect(
 				ios,
-				keywords,
-				values,
-				false,
-				[&] (boost::system::error_code inner, asio_pq::connection h) noexcept {
+				handle,
+				[&] (boost::system::error_code inner) noexcept {
 					invoked = true;
 					ec = inner;
-					handle = std::move(h);
 				}
 			);
 			THEN("The operation does not complete") {
@@ -226,7 +219,6 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 				THEN("The operation completes") {
 					REQUIRE(invoked);
 					AND_THEN("The operation fails") {
-						REQUIRE(handle);
 						CHECK(handle.has_socket());
 						INFO("boost::system::error_code::message: " << ec.message());
 						INFO("PQerrorMessage: " << PQerrorMessage(handle));

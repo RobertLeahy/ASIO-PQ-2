@@ -4,6 +4,7 @@
 #include <asio_pq/connection.hpp>
 #include <asio_pq/result.hpp>
 #include <boost/asio/io_service.hpp>
+#include <boost/asio/use_future.hpp>
 #include <boost/system/system_error.hpp>
 #include <libpq-fe.h>
 #include <utility>
@@ -46,17 +47,12 @@ SCENARIO("PGresult objects may be acquired asynchronously via async_get_result",
 			ASIO_PQ_TEST_DBNAME,
 			nullptr
 		};
-		connection conn;
-		async_connect(ios, keywords, values, false, [&] (auto ec, auto c) {
-			if (ec) {
-				INFO("boost::system::error_code::message: " << ec.message());
-				if (c) INFO("PQerrorMessage: " << PQerrorMessage(c));
-				throw boost::system::system_error(ec);
-			}
-			conn = std::move(c);
-		});
+		connection conn(keywords, values, false);
+		REQUIRE(conn);
+		auto future = async_connect(ios, conn, boost::asio::use_future);
 		ios.run();
 		ios.reset();
+		future.get();
 		REQUIRE(PQsetnonblocking(conn, 1) == 0);
 		WHEN("PQsendQuery is used to submit command(s) to the database and the result(s) thereof are obtained by async_get_result") {
 			REQUIRE(PQsendQuery(

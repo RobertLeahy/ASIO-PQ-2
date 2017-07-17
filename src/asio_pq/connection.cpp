@@ -4,6 +4,7 @@
 #include <boost/system/error_code.hpp>
 #include <libpq-fe.h>
 #include <cassert>
+#include <new>
 #include <utility>
 
 namespace asio_pq {
@@ -15,7 +16,21 @@ void connection::destroy () noexcept {
 	socket_ = boost::none;
 }
 
+void connection::check () const {
+	if (!conn_) throw std::bad_alloc{};
+}
+
 connection::connection () noexcept : conn_(nullptr) {	}
+
+connection::connection (const char * conninfo) : conn_(PQconnectStart(conninfo)) {
+	check();
+}
+
+connection::connection (const char * const * keywords, const char * const * values, bool expand_dbname)
+	:	conn_(PQconnectStartParams(keywords, values, int(expand_dbname)))
+{
+	check();
+}
 
 connection::connection (connection && other) noexcept
 	:	conn_(other.conn_),

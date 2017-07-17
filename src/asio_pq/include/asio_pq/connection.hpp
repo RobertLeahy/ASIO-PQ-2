@@ -23,6 +23,7 @@ private:
 	PGconn * conn_;
 	boost::optional<detail::socket_variant_type> socket_;
 	void destroy () noexcept;
+	void check () const;
 public:
 	/**
 	 *	Creates a new connection which does no manage
@@ -41,6 +42,28 @@ public:
 	 *		The connection handle to manage.
 	 */
 	explicit connection (PGconn * conn) noexcept;
+	/**
+	 *	Creates a new connection which manages a
+	 *	libpq connection handle created by calling
+	 *	`PGconnectStart`.
+	 *
+	 *	\param [in] conninfo
+	 *		See the libpq manual entry for `PGconnectStart`.
+	 */
+	explicit connection (const char * conninfo);
+	/**
+	 *	Creates a new connection which manages a
+	 *	libpq connection handle created by calling
+	 *	`PGconnectStartParams`.
+	 *
+	 *	\param [in] keywords
+	 *		See the libpq manual entry for `PQconnectStartParams`.
+	 *	\param [in] values
+	 *		See the libpq manual entry for `PQconnectStartParams`.
+	 *	\param [in] expand_dbname
+	 *		See the libpq manual entry for `PQconnectStartParams`.
+	 */
+	connection (const char * const * keywords, const char * const * values, bool expand_dbname);
 	/**
 	 *	Destroys the managed handle (if any).
 	 */

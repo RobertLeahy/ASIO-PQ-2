@@ -27,22 +27,7 @@ namespace asio_pq {
 
 namespace detail {
 
-using async_connect_signature = void (boost::system::error_code, connection);
-
-template <typename Handler>
-class async_connect_fail_wrapper : public wrapper<Handler> {
-private:
-	using base = wrapper<Handler>;
-	boost::system::error_code ec_;
-public:
-	async_connect_fail_wrapper (Handler h, boost::system::error_code ec)
-		:	base(std::move(h)),
-			ec_(ec)
-	{	}
-	void operator () () {
-		base::handler()(ec_, connection{});
-	}
-};
+using async_connect_signature = void (boost::system::error_code);
 
 template <typename Handler>
 class async_connect_op {
@@ -62,13 +47,13 @@ private:
 		state (state &&) = default;
 		state & operator = (const state &) = default;
 		state & operator = (state &&) = default;
-		asio_pq::connection handle;
+		connection & handle;
 		boost::asio::io_service & io_service;
 		boost::optional<boost::system::error_code> result;
 		bool read;
 		bool write;
-		state (const Handler &, asio_pq::connection handle, boost::asio::io_service & ios)
-			:	handle(std::move(handle)),
+		state (const Handler &, connection & handle, boost::asio::io_service & ios)
+			:	handle(handle),
 				io_service(ios),
 				read(false),
 				write(false)
@@ -89,8 +74,7 @@ private:
 		assert(!ptr_->read);
 		assert(!ptr_->write);
 		boost::system::error_code ec = *ptr_->result;
-		asio_pq::connection h(std::move(ptr_->handle));
-		ptr_.invoke(ec, std::move(h));
+		ptr_.invoke(ec);
 	}
 	void complete_if () {
 		if (ptr_->read || ptr_->write) return;
@@ -158,8 +142,8 @@ public:
 	async_connect_op (async_connect_op &&) = default;
 	async_connect_op & operator = (const async_connect_op &) = default;
 	async_connect_op & operator = (async_connect_op &&) = default;
-	async_connect_op (Handler h, asio_pq::connection handle, boost::asio::io_service & ios)
-		:	ptr_(std::move(h), std::move(handle), ios)
+	async_connect_op (Handler h, connection & handle, boost::asio::io_service & ios)
+		:	ptr_(std::move(h), handle, ios)
 	{	}
 	void read (boost::system::error_code ec) {
 		ptr_->read = false;
@@ -212,126 +196,51 @@ public:
 	}
 };
 
-template <typename CompletionHandler>
-void async_connect_fail (
-	boost::asio::io_service & ios,
-	boost::system::error_code ec,
-	CompletionHandler h
-) {
-	ios.post(
-		async_connect_fail_wrapper<CompletionHandler>(
-			std::move(h),
-			ec
-		)
-	);
 }
 
+/**
+ *	Asynchronously connects to a PostgreSQL server.
+ *
+ *	\tparam CompletionToken
+ *		The type of completion token an instance
+ *		of which shall be used to notify the caller
+ *		of completion.
+ *
+ *	\param [in] ios
+ *		A `boost::asio::io_service` which shall be used
+ *		to dispatch asynchronous operations.
+ *	\param [in] conn
+ *		A \ref connection object wrapping a libpq connection
+ *		handle. The reference to this object must remain valid
+ *		for the lifetime of the asynchronous operation or the
+ *		behavior is undefined.
+ *	\param [in] token
+ *		The completion token which shall be used to notify
+ *		the caller of completion. Two parameters are provided:
+ *		An instance of `boost::system::error_code` representing
+ *		the result of the operation and a \ref connection containing
+ *		the `PGconn *` representing the connection (if applicable).
+ *
+ *	\return
+ *		Whatever is appropriate given \em CompletionToken.
+ */
 template <typename CompletionToken>
 auto async_connect (
 	boost::asio::io_service & ios,
-	connection h,
+	connection & conn,
 	CompletionToken && token
 ) {
-	beast::async_completion<CompletionToken, async_connect_signature> init(token);
-	if (h) {
-		async_connect_op<
-			beast::handler_type<CompletionToken, async_connect_signature>
-		> op(
-			std::move(init.completion_handler),
-			std::move(h),
-			ios
-		);
-		op.begin();
-	} else {
-		detail::async_connect_fail(
-			ios,
-			make_error_code(boost::system::errc::not_enough_memory),
-			std::move(init.completion_handler)
-		);
-	}
+	assert(conn);
+	beast::async_completion<CompletionToken, detail::async_connect_signature> init(token);
+	detail::async_connect_op<
+		beast::handler_type<CompletionToken, detail::async_connect_signature>
+	> op(
+		std::move(init.completion_handler),
+		conn,
+		ios
+	);
+	op.begin();
 	return init.result.get();
-}
-
-}
-
-/**
- *	Asynchronously connects to a PostgreSQL server.
- *
- *	\tparam CompletionToken
- *		The type of completion token an instance
- *		of which shall be used to notify the caller
- *		of completion.
- *
- *	\param [in] ios
- *		A `boost::asio::io_service` which shall be used
- *		to dispatch asynchronous operations.
- *	\param [in] conninfo
- *		See the libpq manual entry for `PQconnectStart`.
- *	\param [in] token
- *		The completion token which shall be used to notify
- *		the caller of completion. Two parameters are provided:
- *		An instance of `boost::system::error_code` representing
- *		the result of the operation and a \ref connection containing
- *		the `PGconn *` representing the connection (if applicable).
- *
- *	\return
- *		Whatever is appropriate given \em CompletionToken.
- */
-template <typename CompletionToken>
-auto async_connect (
-	boost::asio::io_service & ios,
-	const char * conninfo,
-	CompletionToken && token
-) {
-	connection h(PQconnectStart(conninfo));
-	return detail::async_connect(
-		ios,
-		std::move(h),
-		std::forward<CompletionToken>(token)
-	);
-}
-/**
- *	Asynchronously connects to a PostgreSQL server.
- *
- *	\tparam CompletionToken
- *		The type of completion token an instance
- *		of which shall be used to notify the caller
- *		of completion.
- *
- *	\param [in] ios
- *		A `boost::asio::io_service` which shall be used
- *		to dispatch asynchronous operations.
- *	\param [in] keywords
- *		See the libpq manual entry for `PQconnectStartParams`.
- *	\param [in] values
- *		See the libpq manual entry for `PQconnectStartParams`.
- *	\param [in] expand_dbname
- *		See the libpq manual entry for `PQconnectStartParams`.
- *	\param [in] token
- *		The completion token which shall be used to notify
- *		the caller of completion. Two parameters are provided:
- *		An instance of `boost::system::error_code` representing
- *		the result of the operation and a \ref connection containing
- *		the `PGconn *` representing the connection (if applicable).
- *
- *	\return
- *		Whatever is appropriate given \em CompletionToken.
- */
-template <typename CompletionToken>
-auto async_connect (
-	boost::asio::io_service & ios,
-	const char * const * keywords,
-	const char * const * values,
-	bool expand_dbname,
-	CompletionToken && token
-) {
-	int edbn(expand_dbname);
-	connection h(PQconnectStartParams(keywords, values, expand_dbname));
-	return detail::async_connect(
-		ios,
-		std::move(h),
-		std::forward<CompletionToken>(token)
-	);
 }
 
 }
