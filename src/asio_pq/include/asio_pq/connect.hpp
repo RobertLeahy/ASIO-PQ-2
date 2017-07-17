@@ -42,11 +42,11 @@ class async_connect_op {
 private:
 	class state {
 	public:
-		state () = default;
-		state (const state &) = default;
-		state (state &&) = default;
-		state & operator = (const state &) = default;
-		state & operator = (state &&) = default;
+		state () = delete;
+		state (const state &) = delete;
+		state (state &&) = delete;
+		state & operator = (const state &) = delete;
+		state & operator = (state &&) = delete;
 		connection & handle;
 		boost::optional<boost::system::error_code> result;
 		bool read;
