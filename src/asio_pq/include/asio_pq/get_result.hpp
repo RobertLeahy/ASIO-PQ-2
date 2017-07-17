@@ -301,9 +301,6 @@ void async_get_result_success (
  *		of which shall be used to notify the caller
  *		of completion.
  *
- *	\param [in] ios
- *		A `boost::asio::io_service` which shall be used
- *		to dispatch asynchronous operations.
  *	\param [in] conn
  *		The \ref connection which has a pending command.
  *		It must be the case that `!!conn` is \em true or
@@ -320,22 +317,24 @@ void async_get_result_success (
  */
 template <typename CompletionToken>
 auto async_get_result (
-	boost::asio::io_service & ios,
 	connection & conn,
 	CompletionToken && token
 ) {
-	assert(conn);
 	beast::async_completion<CompletionToken, detail::async_get_result_signature> init(token);
-	auto ec = conn.duplicate_socket(ios);
+	auto ec = conn.duplicate_socket();
 	if (ec) {
-		detail::async_get_result_fail(ios, ec, std::move(init.completion_handler));
+		detail::async_get_result_fail(
+			conn.get_io_service(),
+			ec,
+			std::move(init.completion_handler)
+		);
 		return init.result.get();
 	}
 	int flush = PQflush(conn);
 	switch (flush) {
 	case -1:
 		detail::async_get_result_fail(
-			ios,
+			conn.get_io_service(),
 			make_error_code(error::flush_failed),
 			std::move(init.completion_handler)
 		);
@@ -346,7 +345,7 @@ auto async_get_result (
 	case 0:
 		if (PQconsumeInput(conn) == 0) {
 			detail::async_get_result_fail(
-				ios,
+				conn.get_io_service(),
 				make_error_code(error::consume_failed),
 				std::move(init.completion_handler)
 			);
@@ -355,7 +354,7 @@ auto async_get_result (
 		if (PQisBusy(conn) == 0) {
 			result r(PQgetResult(conn));
 			detail::async_get_result_success(
-				ios,
+				conn.get_io_service(),
 				std::move(r),
 				std::move(init.completion_handler)
 			);

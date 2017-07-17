@@ -21,15 +21,12 @@ namespace asio_pq {
 class connection {
 private:
 	PGconn * conn_;
+	boost::asio::io_service * ios_;
 	boost::optional<detail::socket_variant_type> socket_;
 	void destroy () noexcept;
 	void check () const;
 public:
-	/**
-	 *	Creates a new connection which does no manage
-	 *	a pointer.
-	 */
-	connection () noexcept;
+	connection () = delete;
 	connection (const connection &) = delete;
 	connection (connection &&) noexcept;
 	connection & operator = (const connection &) = delete;
@@ -38,24 +35,36 @@ public:
 	 *	Creates a new connection which manages a
 	 *	particular pointer.
 	 *
+	 *	\param [in] ios
+	 *		The `boost::asio::io_service` which shall be
+	 *		used to dispatch asynchronous operations for
+	 *		the associated connection.
 	 *	\param [in] conn
 	 *		The connection handle to manage.
 	 */
-	explicit connection (PGconn * conn) noexcept;
+	connection (boost::asio::io_service & ios, PGconn * conn) noexcept;
 	/**
 	 *	Creates a new connection which manages a
 	 *	libpq connection handle created by calling
 	 *	`PGconnectStart`.
 	 *
+	 *	\param [in] ios
+	 *		The `boost::asio::io_service` which shall be
+	 *		used to dispatch asynchronous operations for
+	 *		the associated connection.
 	 *	\param [in] conninfo
 	 *		See the libpq manual entry for `PGconnectStart`.
 	 */
-	explicit connection (const char * conninfo);
+	explicit connection (boost::asio::io_service & ios, const char * conninfo);
 	/**
 	 *	Creates a new connection which manages a
 	 *	libpq connection handle created by calling
 	 *	`PGconnectStartParams`.
 	 *
+	 *	\param [in] ios
+	 *		The `boost::asio::io_service` which shall be
+	 *		used to dispatch asynchronous operations for
+	 *		the associated connection.
 	 *	\param [in] keywords
 	 *		See the libpq manual entry for `PQconnectStartParams`.
 	 *	\param [in] values
@@ -63,7 +72,7 @@ public:
 	 *	\param [in] expand_dbname
 	 *		See the libpq manual entry for `PQconnectStartParams`.
 	 */
-	connection (const char * const * keywords, const char * const * values, bool expand_dbname);
+	connection (boost::asio::io_service & ios, const char * const * keywords, const char * const * values, bool expand_dbname);
 	/**
 	 *	Destroys the managed handle (if any).
 	 */
@@ -93,22 +102,20 @@ public:
 	 */
 	operator PGconn * () const noexcept;
 	/**
-	 *	Determines whether or not this object manages
-	 *	a handle.
+	 *	Retrieves the `boost::asio::io_service` associated
+	 *	with this object.
 	 *
 	 *	\return
-	 *		\em true if this object manages a
-	 *		handle, \em false otherwise.
+	 *		A reference to a `boost::asio::io_service`.
 	 */
-	explicit operator bool () const noexcept;
-	boost::system::error_code duplicate_socket (boost::asio::io_service &);
+	boost::asio::io_service & get_io_service () const noexcept;
+	boost::system::error_code duplicate_socket ();
 	template <typename Handler>
 	void socket (Handler h) {
 		assert(socket_);
 		mpark::visit(h, *socket_);
 	}
 	bool has_socket () const noexcept;
-	boost::asio::io_service & get_io_service () noexcept;
 };
 
 }

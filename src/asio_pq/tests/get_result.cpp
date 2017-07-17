@@ -47,9 +47,9 @@ SCENARIO("PGresult objects may be acquired asynchronously via async_get_result",
 			ASIO_PQ_TEST_DBNAME,
 			nullptr
 		};
-		connection conn(keywords, values, false);
+		connection conn(ios, keywords, values, false);
 		REQUIRE(conn);
-		auto future = async_connect(ios, conn, boost::asio::use_future);
+		auto future = async_connect(conn, boost::asio::use_future);
 		ios.run();
 		ios.reset();
 		future.get();
@@ -66,7 +66,7 @@ SCENARIO("PGresult objects may be acquired asynchronously via async_get_result",
 			result r;
 			for (;;) {
 				bool invoked = false;
-				async_get_result(ios, conn, [&] (auto ec, auto res) {
+				async_get_result(conn, [&] (auto ec, auto res) {
 					invoked = true;
 					if (ec) {
 						INFO("boost::system::error_code::message: " << ec.message());

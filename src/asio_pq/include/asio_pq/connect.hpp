@@ -48,13 +48,11 @@ private:
 		state & operator = (const state &) = default;
 		state & operator = (state &&) = default;
 		connection & handle;
-		boost::asio::io_service & io_service;
 		boost::optional<boost::system::error_code> result;
 		bool read;
 		bool write;
-		state (const Handler &, connection & handle, boost::asio::io_service & ios)
+		state (const Handler &, connection & handle)
 			:	handle(handle),
-				io_service(ios),
 				read(false),
 				write(false)
 		{	}
@@ -66,7 +64,7 @@ private:
 		assert(!ptr_->read);
 		assert(!ptr_->write);
 		ptr_->result = ec;
-		boost::asio::io_service & ios = ptr_->io_service;
+		boost::asio::io_service & ios = ptr_->handle.get_io_service();
 		ios.post(std::move(*this));
 	}
 	void complete () {
@@ -142,8 +140,8 @@ public:
 	async_connect_op (async_connect_op &&) = default;
 	async_connect_op & operator = (const async_connect_op &) = default;
 	async_connect_op & operator = (async_connect_op &&) = default;
-	async_connect_op (Handler h, connection & handle, boost::asio::io_service & ios)
-		:	ptr_(std::move(h), handle, ios)
+	async_connect_op (Handler h, connection & handle)
+		:	ptr_(std::move(h), handle)
 	{	}
 	void read (boost::system::error_code ec) {
 		ptr_->read = false;
@@ -158,10 +156,10 @@ public:
 			begin_fail(make_error_code(error::connection_bad));
 			return;
 		}
-		boost::asio::io_service & ios = ptr_->io_service;
-		auto ec = ptr_->handle.duplicate_socket(ios);
+		auto ec = ptr_->handle.duplicate_socket();
 		if (ec) {
 			ptr_->result = ec;
+			boost::asio::io_service & ios = ptr_->handle.get_io_service();
 			ios.post(std::move(*this));
 			return;
 		}
@@ -206,9 +204,6 @@ public:
  *		of which shall be used to notify the caller
  *		of completion.
  *
- *	\param [in] ios
- *		A `boost::asio::io_service` which shall be used
- *		to dispatch asynchronous operations.
  *	\param [in] conn
  *		A \ref connection object wrapping a libpq connection
  *		handle. The reference to this object must remain valid
@@ -226,18 +221,15 @@ public:
  */
 template <typename CompletionToken>
 auto async_connect (
-	boost::asio::io_service & ios,
 	connection & conn,
 	CompletionToken && token
 ) {
-	assert(conn);
 	beast::async_completion<CompletionToken, detail::async_connect_signature> init(token);
 	detail::async_connect_op<
 		beast::handler_type<CompletionToken, detail::async_connect_signature>
 	> op(
 		std::move(init.completion_handler),
-		conn,
-		ios
+		conn
 	);
 	op.begin();
 	return init.result.get();
