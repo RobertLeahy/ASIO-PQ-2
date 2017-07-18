@@ -111,9 +111,9 @@ public:
 	boost::asio::io_service & get_io_service () const noexcept;
 	boost::system::error_code duplicate_socket ();
 	template <typename Handler>
-	void socket (Handler h) {
+	decltype(auto) socket (Handler h) {
 		assert(socket_);
-		mpark::visit(h, *socket_);
+		return mpark::visit(h, *socket_);
 	}
 	bool has_socket () const noexcept;
 	void cancel (boost::system::error_code &) noexcept;
