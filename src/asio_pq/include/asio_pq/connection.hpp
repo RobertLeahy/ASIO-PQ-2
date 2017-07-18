@@ -109,6 +109,9 @@ public:
 	 *		A reference to a `boost::asio::io_service`.
 	 */
 	boost::asio::io_service & get_io_service () const noexcept;
+	/**
+	 *	\cond
+	 */
 	boost::system::error_code duplicate_socket ();
 	template <typename Handler>
 	decltype(auto) socket (Handler h) {
@@ -117,6 +120,9 @@ public:
 	}
 	bool has_socket () const noexcept;
 	void cancel (boost::system::error_code &) noexcept;
+	/**
+	 *	\endcond
+	 */
 };
 
 }
