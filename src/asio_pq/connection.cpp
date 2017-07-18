@@ -96,4 +96,10 @@ bool connection::has_socket () const noexcept {
 	return bool(socket_);
 }
 
+void connection::cancel (boost::system::error_code & ec) noexcept {
+	ec.clear();
+	socket([&] (auto & socket) noexcept {	socket.cancel(ec);	});
+	if (!ec) socket_ = boost::none;
+}
+
 }

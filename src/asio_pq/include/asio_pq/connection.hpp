@@ -116,6 +116,7 @@ public:
 		mpark::visit(h, *socket_);
 	}
 	bool has_socket () const noexcept;
+	void cancel (boost::system::error_code &) noexcept;
 };
 
 }

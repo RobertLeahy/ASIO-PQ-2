@@ -1,4 +1,5 @@
 add_library(asio_pq
+	cancel.cpp
 	connection.cpp
 	detail/socket.cpp
 	error.cpp

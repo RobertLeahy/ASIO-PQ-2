@@ -10,6 +10,7 @@
 #include "error.hpp"
 #include <beast/core/async_result.hpp>
 #include <beast/core/handler_ptr.hpp>
+#include <boost/asio/error.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/handler_alloc_hook.hpp>
 #include <boost/asio/handler_continuation_hook.hpp>
@@ -84,6 +85,10 @@ private:
 		complete_if();
 	}
 	bool check () {
+		if (!ptr_->handle.has_socket()) {
+			fail(make_error_code(boost::asio::error::operation_aborted));
+			return false;
+		}
 		if (!ptr_->result) return true;
 		complete();
 		return false;

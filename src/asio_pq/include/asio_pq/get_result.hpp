@@ -11,6 +11,7 @@
 #include "result.hpp"
 #include <beast/core/async_result.hpp>
 #include <beast/core/handler_ptr.hpp>
+#include <boost/asio/error.hpp>
 #include <boost/asio/handler_alloc_hook.hpp>
 #include <boost/asio/handler_continuation_hook.hpp>
 #include <boost/asio/handler_invoke_hook.hpp>
@@ -129,6 +130,10 @@ private:
 		ptr_.invoke(ec, std::move(result));
 	}
 	bool complete_if () {
+		if (!ptr_->connection.has_socket()) {
+			fail(make_error_code(boost::asio::error::operation_aborted));
+			return true;
+		}
 		if (!ptr_->error_code) return false;
 		complete();
 		return true;

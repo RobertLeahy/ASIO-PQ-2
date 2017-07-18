@@ -1,5 +1,6 @@
 configure_file(config.hpp.in "${CMAKE_CURRENT_BINARY_DIR}/config.hpp" ESCAPE_QUOTES)
 add_executable(asio_pq_tests
+	cancel.cpp
 	connect.cpp
 	get_result.cpp
 	main.cpp
