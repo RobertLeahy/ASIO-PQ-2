@@ -220,6 +220,59 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 	}
 }
 
+#ifndef _WIN32
+SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL server via Unix domain socket", "[asio_pq][async_connect][unix_domain_socket]") {
+	GIVEN("A boost::asio::io_service") {
+		boost::asio::io_service ios;
+		WHEN("A call to async_connect is made with valid parameters which specify a Unix domain socket as the host") {
+			const char * keywords [] = {
+				"host",
+				"user",
+				"dbname",
+				#ifdef ASIO_PQ_TEST_SOCKET_USE_PASSWORD
+				"password",
+				#endif
+				nullptr
+			};
+			const char * values [] = {
+				ASIO_PQ_TEST_SOCKET,
+				ASIO_PQ_TEST_USER,
+				ASIO_PQ_TEST_DBNAME,
+				#ifdef ASIO_PQ_TEST_SOCKET_USE_PASSWORD
+				ASIO_PQ_TEST_PASSWORD,
+				#endif
+				nullptr
+			};
+			connection handle(ios, keywords, values, false);
+			boost::system::error_code ec;
+			bool invoked = false;
+			async_connect(
+				handle,
+				[&] (boost::system::error_code inner) noexcept {
+					invoked = true;
+					ec = inner;
+				}
+			);
+			THEN("The operation does not complete") {
+				CHECK_FALSE(invoked);
+			}
+			AND_WHEN("boost::asio::io_service::run is called") {
+				ios.run();
+				THEN("The operation completes") {
+					REQUIRE(invoked);
+					AND_THEN("The operation does not fail") {
+						CHECK(handle.has_socket());
+						INFO("boost::system::error_code::message: " << ec.message());
+						INFO("PQerrorMessage: " << PQerrorMessage(handle));
+						CHECK_FALSE(ec);
+					}
+				}
+			}
+		}
+	}
+}
+#endif
+
 }
 }
 }
