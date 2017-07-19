@@ -30,11 +30,11 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 			bool invoked = false;
 			connection handle(
 				ios,
-				"host=" ASIO_PQ_TEST_HOST
-				" port=" ASIO_PQ_TEST_PORT
-				" user=" ASIO_PQ_TEST_USER
-				" password=" ASIO_PQ_TEST_PASSWORD
-				" dbname=" ASIO_PQ_TEST_DBNAME
+				"host='" ASIO_PQ_TEST_HOST "'"
+				" port='" ASIO_PQ_TEST_PORT "'"
+				" user='" ASIO_PQ_TEST_USER "'"
+				" password='" ASIO_PQ_TEST_PASSWORD "'"
+				" dbname='" ASIO_PQ_TEST_DBNAME "'"
 			);
 			async_connect(
 				handle,
@@ -153,11 +153,11 @@ SCENARIO("async_connect may be used to asynchronously connect to a PostgreSQL se
 			bool invoked = false;
 			connection handle(
 				ios,
-				"host=" ASIO_PQ_TEST_BAD_HOST
-				" port=" ASIO_PQ_TEST_BAD_PORT
-				" user=" ASIO_PQ_TEST_BAD_USER
-				" password=" ASIO_PQ_TEST_BAD_PASSWORD
-				" dbname=" ASIO_PQ_TEST_BAD_DBNAME
+				"host='" ASIO_PQ_TEST_BAD_HOST "'"
+				" port='" ASIO_PQ_TEST_BAD_PORT "'"
+				" user='" ASIO_PQ_TEST_BAD_USER "'"
+				" password='" ASIO_PQ_TEST_BAD_PASSWORD "'"
+				" dbname='" ASIO_PQ_TEST_BAD_DBNAME "'"
 			);
 			async_connect(
 				handle,
